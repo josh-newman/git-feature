@@ -2,21 +2,51 @@
 
 import json
 import subprocess
+import sys
 
 
 def main():
-    print(_read_config('branch-prefix'))
+    if len(sys.argv) == 1:
+        print _read_current_feature()
+    elif len(sys.argv) == 2:
+        _new_feature(sys.argv[1])
+    else:
+        sys.exit('bad args: %s' % sys.argv[1:])
+
+
+def _new_feature(feature):
+    branch = '%s-%s'% (_read_branch_prefix(), feature)
+    _set_config('features_branches', feature, branch)
+    _set_config('branches_features', branch, feature)
+    _git('branch', branch, 'origin/master')
+    _git('checkout', branch)
+
+
+def _read_current_feature():
+    branch = _git('symbolic-ref', '-q', '--short', 'HEAD').strip()
+    return _read_config('branches_features', branch)
 
 
 def _read_branch_prefix():
-    return _read_config('branch-prefix')
+    return _read_config('settings', 'branch-prefix')
 
 
-def _read_config(key):
-    config_str = subprocess.check_output([
-        'git', 'config', '--local', '--null', '--get', 'git-feature.%s' % key
-    ])
-    return config_str.decode('utf-8')
+def _read_config(key_type, key):
+    return _git(
+        'config', '--local', '--null', '--get',
+        'git-feature.%s.%s' % (key_type, key),
+    )[:-1]
+
+
+def _set_config(key_type, key, value):
+    return _git(
+        'config', '--local',
+        'git-feature.%s.%s' % (key_type, key), value.encode('utf-8')
+    )
+
+
+def _git(*args):
+    return subprocess.check_output(['git'] + list(args)).decode('utf-8')
 
 
 if __name__ == '__main__':
