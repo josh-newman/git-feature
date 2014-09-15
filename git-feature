@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+
+import json
+import subprocess
+
+
+def main():
+    print(_read_config('branch-prefix'))
+
+
+def _read_branch_prefix():
+    return _read_config('branch-prefix')
+
+
+def _read_config(key):
+    config_str = subprocess.check_output([
+        'git', 'config', '--local', '--null', '--get', 'git-feature.%s' % key
+    ])
+    return config_str.decode('utf-8')
+
+
+if __name__ == '__main__':
+    main()
